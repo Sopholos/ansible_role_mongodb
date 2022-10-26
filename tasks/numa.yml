@@ -1,6 +1,6 @@
 ---
 - name: numa | install numactl
-  dnf:
+  apt:
     name: numactl
 
 - name: numa | check zone reclaim mode

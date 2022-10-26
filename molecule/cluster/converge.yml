@@ -7,7 +7,7 @@
     - test-multi-03
   tasks:
     - name: install iproute
-      dnf:
+      apt:
         name: iproute
 
     - name: set /etc/hosts file
