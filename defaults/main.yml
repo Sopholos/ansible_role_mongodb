@@ -29,6 +29,11 @@ mongo_storage:
   dbPath: /var/lib/mongo
   journal:
     enabled: true
+  directoryPerDB: true
+  engine: wiredTiger
+  wiredTiger:
+    engineConfig:
+        directoryForIndexes: true
 
 # You should not change the pidfile location
 mongo_processmanagement:
@@ -37,7 +42,8 @@ mongo_processmanagement:
   timeZoneInfo: /usr/share/zoneinfo
 
 # The keyfile is automatically generated
-mongo_security: ''
+mongo_security:
+  authorization: enabled
 
 mongo_operationprofiling: ''
 

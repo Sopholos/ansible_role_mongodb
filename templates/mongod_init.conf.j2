@@ -9,9 +9,11 @@ systemLog:
 {{ mongo_systemlog | to_nice_yaml(indent=2) | indent(width=2, first=True) }}
 
 storage:
-  dbPath: {{ mongo_storage.dbPath }}
-  journal:
-    enabled: true
+{{ mongo_storage | to_nice_yaml(indent=2) | indent(width=2, first=True) }}
+#storage:
+#  dbPath: {{ mongo_storage.dbPath }}
+#  journal:
+#    enabled: true
 
 processManagement:
   fork: true
