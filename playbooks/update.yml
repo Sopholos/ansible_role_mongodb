@@ -8,7 +8,7 @@
         host_count: "{{ ansible_play_hosts | length }}"
 
     - name: update | mongo edition {{ mongo_edition }} when one host is present
-      dnf:
+      apt:
         name: "mongodb-{{ mongo_edition }}"
         state: latest
       when: host_count == '1'
@@ -58,7 +58,7 @@
       when: mongo_arbiter
 
     - name: update | mongo on arbiter
-      dnf:
+      apt:
         name: "mongodb-{{ mongo_edition }}"
         state: latest
       when: mongo_arbiter
@@ -128,7 +128,7 @@
       when: mongo_secondary
 
     - name: update | mongo on secondary
-      dnf:
+      apt:
         name: "mongodb-{{ mongo_edition }}"
         state: latest
       when: mongo_secondary
@@ -202,7 +202,7 @@
         path: /root/mongo_primary_stepdown.js
 
     - name: update | mongo on primary
-      dnf:
+      apt:
         name: "mongodb-{{ mongo_edition }}"
         state: latest
 

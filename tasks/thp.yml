@@ -1,6 +1,6 @@
 ---
 - name: thp | install tuned
-  dnf:
+  apt:
     name: tuned
 
 - name: thp | tuned dir

@@ -12,7 +12,7 @@
     roles: "{{ item.roles | default(omit) }}"
     password: "{{ item.password }}"
     update_password: "{{ item.update_password | default('always') }}"
-    state: "{{ item.state | default(present) }}"
+    state: "{{ item.state | default('present') }}"
 
     replica_set: "{{ mongo_replication.replSet | default(omit) }}"
 
@@ -28,4 +28,5 @@
     connection_options: "{{ item.connection_options | default(omit) }}"
     create_for_localhost_exception: >-
       {{ item.create_for_localhost_exception | default(omit) }}
+  no_log: true
   loop: "{{ mongo_user }}"
