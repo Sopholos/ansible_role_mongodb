@@ -35,7 +35,7 @@ mongo_storage:
     engineConfig:
         directoryForIndexes: true
 
-# You should not change the pidfile location
+# You should not change the pidfile location, its hardcoded by systemd RuntimeDirectory /var/run
 mongo_processmanagement:
   fork: true
   pidFilePath: /var/run/mongodb/mongod.pid

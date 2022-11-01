@@ -17,7 +17,7 @@ storage:
 
 processManagement:
   fork: false
-  pidFilePath: /var/run/mongodb/mongod.pid
+  pidFilePath: {{ mongo_processmanagement.pidFilePath }}
   timeZoneInfo: /usr/share/zoneinfo
 
 net:

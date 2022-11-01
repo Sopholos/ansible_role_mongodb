@@ -20,10 +20,10 @@
     - "rm -rf {{ mongo_storage.dbPath }}"
     - "rm {{ mongo_security.keyFile | default(omit) }} | echo"
     - "rm -f /etc/systemd/system/disable-transparent-hugepage*"
-    - userdel mongod | echo
+    - userdel mongodb | echo
     - rm -rf /etc/tuned/virtual-guest-no-thp/tuned.conf
     - "rm -rf {{ mongo_backup.path }}"
-    - userdel mongod | echo  # weird bug, but sometimes the user isn't removed
+    - userdel mongodb | echo  # weird bug, but sometimes the user isn't removed
     - "rm -f /usr/lib/systemd/system/mongod.service"
   args:
     warn: false

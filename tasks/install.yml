@@ -13,16 +13,14 @@
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu {{ ubuntu_version }}/mongodb-org/{{ mongo_version }} multiverse" > /etc/apt/sources.list.d/mongodb-org-{{ mongo_version }}.list
   when: mongo_repo
 
-- name: install | group mongod
+- name: install | group mongodb
   group:
     name: mongodb
-    #gid: 28
     system: true
 
-- name: install | user mongod
+- name: install | user mongodb
   user:
     name: mongodb
-    #uid: 28
     system: true
     group: mongodb
     comment: 'MongoDB Server'
@@ -42,6 +40,23 @@
   apt:
     update_cache: yes
     name: mongodb-{{ mongo_edition }}
+
+- name: install | mongod.service PIDFile and RuntimeDirectory
+  ini_file:
+    path: /usr/lib/systemd/system/mongod.service
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    state: present
+    no_extra_spaces: yes
+  loop:
+    - { section: Service, option: PIDFile, value: "{{ mongo_processmanagement.pidFilePath }}" }
+    - { section: Service, option: RuntimeDirectory, value: "mongodb" }
+    - { section: Service, option: RuntimeDirectoryMode, value: "0755" }
+
+- name: install | reload daemons, because a service file changed
+  systemd:
+    daemon_reload: true
 
 - name: install | data folder
   file:
@@ -65,15 +80,6 @@
   when: >-
     '/var/log/mongodb' not in mongo_systemlog.path or
     mongo_systemlog.destination != 'file'
-
-- name: install | grants for pidFilePath
-  file:
-    path: "{{ mongo_processmanagement.pidFilePath | dirname }}"
-    state: directory
-    mode: u=rwx,g=rw,o=r
-    recurse: yes
-    group: mongodb
-    owner: mongodb
 
 - block:
 
