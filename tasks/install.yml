@@ -64,9 +64,23 @@
     state: directory
     path: "{{ mongo_storage.dbPath }}"
     mode: u=rwx,g=rw,o=r
-    recurse: yes
     owner: mongodb
     group: mongodb
+
+- name: install | journal folder
+  file:
+    state: directory
+    path: "{{ mongo_storage.dbPath }}/journal"
+    mode: u=rwx,g=rw,o=r
+    owner: mongodb
+    group: mongodb
+
+- name: install | logs folder
+  file:
+    path: "{{ mongo_systemlog.path | dirname }}"
+    mode: u=rwx,g=rw,o=r
+    group: mongodb
+    owner: mongodb
 
 - name: install | remove default data folder when set differently
   file:
