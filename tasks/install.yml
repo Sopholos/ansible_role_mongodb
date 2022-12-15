@@ -85,8 +85,8 @@
 - name: install | remove default data folder when set differently
   file:
     state: absent
-    path: /var/lib/mongo
-  when: mongo_storage.dbPath != '/var/lib/mongo'
+    path: /var/lib/mongodb
+  when: mongo_storage.dbPath != '/var/lib/mongodb'
 
 - name: install | remove log folder when set differently
   file:

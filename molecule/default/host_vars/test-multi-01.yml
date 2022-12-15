@@ -20,7 +20,7 @@ mongo_backup:
     - local
   user: backup
   pass: something
-  path: /var/lib/mongo_backups
+  path: /var/lib/mongodb_backups
   owner: mongodb
   group: mongodb
   mode: '0660'
