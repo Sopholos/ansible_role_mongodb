@@ -67,8 +67,8 @@
         src: /tmp/mongo_keyfile
         dest: "{{ mongo_security.keyFile }}"
         mode: '0400'
-        owner: mongod
-        group: mongod
+        owner: mongodb
+        group: mongodb
 
   when: keyfile_none is defined
 
@@ -87,8 +87,8 @@
         src: /tmp/mongo_keyfile
         dest: "{{ mongo_security.keyFile }}"
         mode: '0400'
-        owner: mongod
-        group: mongod
+        owner: mongodb
+        group: mongodb
 
   when: keyfile_all is defined and not keyfile_all
 

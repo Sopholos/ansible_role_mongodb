@@ -21,8 +21,8 @@ mongo_backup:
   user: backup
   pass: something
   path: /var/lib/mongo_backups
-  owner: mongod
-  group: mongod
+  owner: mongodb
+  group: mongodb
   mode: '0660'
   hour: 2
   minute: 5
