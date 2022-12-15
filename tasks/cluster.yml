@@ -1,7 +1,7 @@
 ---
 - name: cluster | check if hosts are in clustered
   shell: >-
-    mongo --port {{ mongo_net.port }} --quiet --eval 'db.isMaster().hosts'
+    mongosh --port {{ mongo_net.port }} --quiet --eval 'db.isMaster().hosts'
   register: check_cluster
   changed_when: false
 
