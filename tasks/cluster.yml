@@ -60,15 +60,16 @@
         members | default([]) +
         [{
           'host': item + ':{{ mongo_net.port }}',
-          'priority': member_weight[hostvars[item].mongo_replication_role]
+          'priority': member_weight[hostvars[item].mongo_replication_role] + 
+            (hostvars[item]['ansible_default_ipv4']['address'].split('.')[3] | int % 10)
         }]
       }}
   loop: "{{ ansible_play_hosts }}"
   run_once: true
   vars:
     member_weight:
-      primary: 3
-      secondary: 2
+      primary: 100
+      secondary: 50
       arbiter: 1
 
 - name: cluster | confirm cluster configuration
@@ -84,7 +85,9 @@
 
 - name: cluster | stop cluster configuration
   meta: end_play
-  when: confirmed_cluster.user_input == "no"
+  when: mongo_confirm_cluster_configuration 
+    and confirmed_cluster is defined
+    and confirmed_cluster.user_input == "no"  
 
 - name: cluster | set fact for arbiter index number
   set_fact:
@@ -164,8 +167,8 @@
 
   when: no_host_is_clustered is defined
 
-# - name: cluster | include scale playbook when applicable
-#   include_tasks: scale.yml
-#   when:
-#     - all_cluster_status is defined and not all_cluster_status
-#     - no_host_is_clustered is not defined
+- name: cluster | include scale playbook when applicable
+  include_tasks: scale.yml
+  when:
+    - all_cluster_status is defined and not all_cluster_status
+    - no_host_is_clustered is not defined
