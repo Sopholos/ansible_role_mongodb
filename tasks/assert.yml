@@ -3,9 +3,9 @@
   set_fact:
     host_count: "{{ ansible_play_hosts | length }}"
 
-- name: assert | that uneven amount of hosts are set
+- name: assert | that valid amount of hosts are set
   assert:
-    that: "{{ host_count | int % 2 != 0 }}"
+    that: "{{ host_count != 2 }}"
 
 - name: assert | that naming is set correctly for replication roles
   assert:
