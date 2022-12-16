@@ -92,3 +92,6 @@ mongo_restart_config: true
 
 # Amount of seconds before the next mongo instance will be restarted
 mongo_restart_seconds: 15
+
+# need to confirum cluster configuration to continue
+mongo_confirm_cluster_configuration: 1

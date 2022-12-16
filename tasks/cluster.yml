@@ -71,6 +71,21 @@
       secondary: 2
       arbiter: 1
 
+- name: cluster | confirm cluster configuration
+  pause:
+    prompt: "Are you sure you want to manage this cluster setup\
+    {{ members | to_nice_json(indent=2) }}?\
+    (type exactly yes/no)"
+  register: confirmed_cluster
+  until: confirmed_cluster.user_input in confirm_set
+  when: mongo_confirm_cluster_configuration
+  vars:
+    confirm_set: [ "yes", "no" ]
+
+- name: cluster | stop cluster configuration
+  meta: end_play
+  when: confirmed_cluster.user_input == "no"
+
 - name: cluster | set fact for arbiter index number
   set_fact:
     arbiter_index: "{{ hostid }}"
