@@ -16,9 +16,7 @@
 
 - name: conf | restart mongod service one by one, after a config change, if set
   shell: "systemctl restart mongod && sleep {{ mongo_restart_seconds }}"
-  run_once: true
-  delegate_to: "{{ item }}"
-  loop: "{{ ansible_play_hosts }}"
+  throttle: 1
   args:
     warn: false
   when:

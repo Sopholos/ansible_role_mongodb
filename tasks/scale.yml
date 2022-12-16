@@ -11,6 +11,22 @@
 # I have tried configuring this countless amount of times, but always failed
 # for some reason. I decided to not include scaling for now.
 
+- name: scale | find hosts without cluster members
+  set_fact:
+    cluster_empty_members: "{{ cluster_empty_members + [ { 'host': item.key } ] }}"
+  when: item.value | list is not any
+  loop: "{{ lookup('dict', all_cluster_check) }}"
+  vars:
+    cluster_empty_members: []
+
+- name: scale | add missing clusters to primary
+  shell: >-
+    mongosh --port {{ mongo_net.port }} --quiet --eval "db.auth('admin', '{{ mongo_admin_pass }}'); rs.add( {{ item }} )" admin
+  loop: "{{ cluster_empty_members }}"
+  when: mongo_primary
+
+# apply config changes to new members
+- include_tasks: config.yml
 
 # - name: scale | check if hosts are in cluster
 #   shell: mongo --quiet --eval 'db.isMaster().hosts'
