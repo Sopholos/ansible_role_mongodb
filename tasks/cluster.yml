@@ -112,11 +112,12 @@
         group: root
         mode: '0644'
 
-    - name: cluster | restart mongo
-      service:
-        name: mongod
-        state: restarted
-
+    - name: cluster | restart mongod service one by one
+      shell: systemctl restart mongod && sleep 15
+      throttle: 1
+      args:
+        warn: false
+  
     - name: cluster | initial build
       community.mongodb.mongodb_replicaset:
         login_host: localhost
