@@ -1,18 +1,62 @@
 ---
-- name: user_init | check if admin user exists
+- name: user_init | try to create admin user without auth (new instance)
+  community.mongodb.mongodb_user:
+    database: admin
+    name: admin
+    password: "{{ mongo_admin_pass }}"
+    roles: root
+    login_host: localhost
+    login_port: "{{ mongo_net.port }}"
+    create_for_localhost_exception: true
+  register: admin_create_result
+  failed_when: false
+  changed_when: admin_create_result.changed | default(false)
+
+- name: user_init | enable security after admin creation (new instance)
+  block:
+    - name: user_init | stop mongod to enable security
+      service:
+        name: mongod
+        state: stopped
+
+    - name: user_init | set config with security enabled
+      template:
+        src: mongod.conf.j2
+        dest: /etc/mongod.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: user_init | start mongo with security
+      service:
+        name: mongod
+        state: started
+        enabled: true
+
+    - name: user_init | wait for mongo with security
+      wait_for:
+        port: "{{ mongo_net.port }}"
+        host: localhost
+        delay: 10
+        timeout: 60
+
+  when: admin_create_result.changed | default(false)
+
+- name: user_init | check if admin user exists (if creation failed)
   command: mongosh --port {{ mongo_net.port }} -u admin -p "{{ mongo_admin_pass }}" --authenticationDatabase admin --eval "db.adminCommand('ping')" --quiet
   register: admin_user_check
   failed_when: false
   changed_when: false
+  when: not (admin_create_result.changed | default(false))
 
-- name: user_init | create users without authentication (when admin doesn't exist)
+- name: user_init | create admin on secured instance
   block:
     - name: user_init | stop mongod
       service:
         name: mongod
         state: stopped
 
-    - name: user_init | set temporary conf without security
+    - name: user_init | set clean config without security
       template:
         src: mongod_init.conf.j2
         dest: /etc/mongod.conf
@@ -39,7 +83,7 @@
       register: mongo_ping
       until: mongo_ping.rc == 0
 
-    - name: user_init | create admin user
+    - name: user_init | create admin user on clean instance
       community.mongodb.mongodb_user:
         database: admin
         name: admin
@@ -48,31 +92,12 @@
         login_host: localhost
         login_port: "{{ mongo_net.port }}"
 
-    - name: user_init | create adminuser
-      community.mongodb.mongodb_user:
-        database: admin
-        name: "{{ mongo_adminuser_name }}"
-        password: "{{ mongo_adminuser_pass }}"
-        roles: userAdminAnyDatabase
-        login_host: localhost
-        login_port: "{{ mongo_net.port }}"
-
-    - name: user_init | create backup user
-      community.mongodb.mongodb_user:
-        database: admin
-        name: "{{ mongo_backup.user }}"
-        password: "{{ mongo_backup.pass }}"
-        roles: backup
-        login_host: localhost
-        login_port: "{{ mongo_net.port }}"
-      when: mongo_backup.enabled
-
-    - name: user_init | stop mongo after user creation
+    - name: user_init | stop mongo after admin creation
       service:
         name: mongod
         state: stopped
 
-    - name: user_init | restore original config with security
+    - name: user_init | restore normal config with security
       template:
         src: mongod.conf.j2
         dest: /etc/mongod.conf
@@ -93,11 +118,100 @@
         delay: 10
         timeout: 60
 
-    - name: user_init | verify secured mongo is responsive
+  when: 
+    - not (admin_create_result.changed | default(false))
+    - admin_user_check is defined and admin_user_check.rc != 0
+
+- name: user_init | ensure mongo is running and accessible
+  block:
+    - name: user_init | ensure mongod service is started
+      service:
+        name: mongod
+        state: started
+        enabled: true
+
+    - name: user_init | wait for mongo to be ready
+      wait_for:
+        port: "{{ mongo_net.port }}"
+        host: localhost
+        delay: 5
+        timeout: 60
+
+    - name: user_init | verify mongo is accessible with admin creds
       command: mongosh --port {{ mongo_net.port }} -u admin -p "{{ mongo_admin_pass }}" --authenticationDatabase admin --eval "db.adminCommand('ping')" --quiet
       retries: 10
       delay: 3
-      register: secured_mongo_ping
-      until: secured_mongo_ping.rc == 0
+      register: mongo_access_check
+      until: mongo_access_check.rc == 0
 
-  when: admin_user_check.rc != 0
+- name: user_init | create remaining users without replication
+  block:
+    - name: user_init | stop mongod for user creation
+      service:
+        name: mongod
+        state: stopped
+
+    - name: user_init | set config without replication for user creation
+      template:
+        src: mongod_init.conf.j2
+        dest: /etc/mongod.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: user_init | start mongo without replication
+      service:
+        name: mongod
+        state: started
+
+    - name: user_init | wait for mongo without replication
+      wait_for:
+        port: "{{ mongo_net.port }}"
+        host: localhost
+        delay: 5
+        timeout: 60
+
+    - name: user_init | create remaining users with admin credentials
+      community.mongodb.mongodb_user:
+        login_host: localhost
+        login_port: "{{ mongo_net.port }}"
+        login_database: admin
+        login_user: admin
+        login_password: "{{ mongo_admin_pass }}"
+        database: "{{ item.database }}"
+        name: "{{ item.name }}"
+        password: "{{ item.password }}"
+        roles: "{{ item.roles }}"
+        state: present
+      loop:
+        - { database: admin, name: "{{ mongo_adminuser_name }}", password: "{{ mongo_adminuser_pass }}", roles: userAdminAnyDatabase }
+        - { database: admin, name: "{{ mongo_backup.user }}", password: "{{ mongo_backup.pass }}", roles: backup }
+      when: 
+        - item.name != "admin"
+        - not (item.name == mongo_backup.user and not mongo_backup.enabled)
+
+    - name: user_init | stop mongo after user creation
+      service:
+        name: mongod
+        state: stopped
+
+    - name: user_init | restore config with replication
+      template:
+        src: mongod.conf.j2
+        dest: /etc/mongod.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: user_init | start mongo with replication config
+      service:
+        name: mongod
+        state: started
+        enabled: true
+
+    - name: user_init | wait for mongo with replication
+      wait_for:
+        port: "{{ mongo_net.port }}"
+        host: localhost
+        delay: 10
+        timeout: 60
