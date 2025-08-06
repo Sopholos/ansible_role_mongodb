@@ -1,33 +1,103 @@
 ---
-- name: user_init | set temporary conf
-  template:
-    src: mongod_init.conf.j2
-    dest: /etc/mongod.conf
-    owner: root
-    group: root
-    mode: '0644'
+- name: user_init | check if admin user exists
+  command: mongosh --port {{ mongo_net.port }} -u admin -p "{{ mongo_admin_pass }}" --authenticationDatabase admin --eval "db.adminCommand('ping')" --quiet
+  register: admin_user_check
+  failed_when: false
+  changed_when: false
 
-- name: user_init | start mongo
-  service:
-    name: mongod
-    state: started
+- name: user_init | create users without authentication (when admin doesn't exist)
+  block:
+    - name: user_init | stop mongod
+      service:
+        name: mongod
+        state: stopped
 
-- name: user_init | create users admin, adminuser and backup
-  community.mongodb.mongodb_user:
-    database: admin
-    name: "{{ item.name }}"
-    password: "{{ item.pass }}"
-    roles: "{{ item.role }}"
-    login_host: 127.0.0.1
-    login_port: "{{ mongo_net.port }}"
-  no_log: true
-  loop:
-    - name: admin
-      pass: "{{ mongo_admin_pass }}"
-      role: root
-    - name: "{{ mongo_adminuser_name }}"
-      pass: "{{ mongo_adminuser_pass }}"
-      role: userAdminAnyDatabase
-    - name: "{{ mongo_backup.user }}"
-      pass: "{{ mongo_backup.pass }}"
-      role: backup
+    - name: user_init | set temporary conf without security
+      template:
+        src: mongod_init.conf.j2
+        dest: /etc/mongod.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: user_init | start mongo without security
+      service:
+        name: mongod
+        state: started
+
+    - name: user_init | wait for mongo to start
+      wait_for:
+        port: "{{ mongo_net.port }}"
+        host: localhost
+        delay: 5
+        timeout: 60
+
+    - name: user_init | verify mongo is responsive
+      command: mongosh --port {{ mongo_net.port }} --eval "db.adminCommand('ping')" --quiet
+      retries: 5
+      delay: 3
+      register: mongo_ping
+      until: mongo_ping.rc == 0
+
+    - name: user_init | create admin user
+      community.mongodb.mongodb_user:
+        database: admin
+        name: admin
+        password: "{{ mongo_admin_pass }}"
+        roles: root
+        login_host: localhost
+        login_port: "{{ mongo_net.port }}"
+
+    - name: user_init | create adminuser
+      community.mongodb.mongodb_user:
+        database: admin
+        name: "{{ mongo_adminuser_name }}"
+        password: "{{ mongo_adminuser_pass }}"
+        roles: userAdminAnyDatabase
+        login_host: localhost
+        login_port: "{{ mongo_net.port }}"
+
+    - name: user_init | create backup user
+      community.mongodb.mongodb_user:
+        database: admin
+        name: "{{ mongo_backup.user }}"
+        password: "{{ mongo_backup.pass }}"
+        roles: backup
+        login_host: localhost
+        login_port: "{{ mongo_net.port }}"
+      when: mongo_backup.enabled
+
+    - name: user_init | stop mongo after user creation
+      service:
+        name: mongod
+        state: stopped
+
+    - name: user_init | restore original config with security
+      template:
+        src: mongod.conf.j2
+        dest: /etc/mongod.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: user_init | start mongo with security
+      service:
+        name: mongod
+        state: started
+        enabled: true
+
+    - name: user_init | wait for mongo to start with security
+      wait_for:
+        port: "{{ mongo_net.port }}"
+        host: localhost
+        delay: 10
+        timeout: 60
+
+    - name: user_init | verify secured mongo is responsive
+      command: mongosh --port {{ mongo_net.port }} -u admin -p "{{ mongo_admin_pass }}" --authenticationDatabase admin --eval "db.adminCommand('ping')" --quiet
+      retries: 10
+      delay: 3
+      register: secured_mongo_ping
+      until: secured_mongo_ping.rc == 0
+
+  when: admin_user_check.rc != 0

@@ -115,8 +115,6 @@
     - name: cluster | restart mongod service one by one
       shell: systemctl restart mongod && sleep 15
       throttle: 1
-      args:
-        warn: false
   
     - name: cluster | initial build
       community.mongodb.mongodb_replicaset:
@@ -149,8 +147,6 @@
     - name: cluster | restart mongod service one by one
       shell: systemctl restart mongod && sleep 15
       throttle: 1
-      args:
-        warn: false
 
     - name: cluster | wait until cluster health is ok
       community.mongodb.mongodb_status:

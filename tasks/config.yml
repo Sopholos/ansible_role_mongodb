@@ -17,8 +17,6 @@
 - name: conf | restart mongod service one by one, after a config change, if set
   shell: "systemctl restart mongod && sleep {{ mongo_restart_seconds }}"
   throttle: 1
-  args:
-    warn: false
   when:
     - mongo_restart_config
     - mongo_conf_set.changed
