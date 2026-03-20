@@ -1,0 +1,28 @@
+---
+- name: start_all | ensure mongod config is present on all nodes
+  template:
+    src: mongod.conf.j2
+    dest: /etc/mongod.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: start_all | start mongod service on all nodes
+  service:
+    name: mongod
+    state: started
+    enabled: true
+
+- name: start_all | wait for mongod to start on all nodes
+  wait_for:
+    port: "{{ mongo_net.port }}"
+    host: localhost
+    delay: 5
+    timeout: 60
+
+- name: start_all | verify mongod is responsive on all nodes
+  command: mongosh --port {{ mongo_net.port }} --eval "db.adminCommand('ping')" --quiet
+  retries: 5
+  delay: 3
+  register: node_ping
+  until: node_ping.rc == 0

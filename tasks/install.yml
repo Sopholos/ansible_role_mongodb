@@ -131,4 +131,5 @@
   pip:
     name: pymongo
     executable: pip3
+    extra_args: --break-system-packages
     version: "{{ mongo_pymongo_version }}"

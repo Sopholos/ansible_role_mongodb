@@ -14,7 +14,7 @@
     update_password: "{{ item.update_password | default('always') }}"
     state: "{{ item.state | default('present') }}"
 
-    replica_set: "{{ mongo_replication.replSet | default(omit) }}"
+    replica_set: "{{ mongo_replication.replSetName | default(omit) }}"
 
     ssl: "{{ item.ssl | default(omit) }}"
     ssl_ca_certs: "{{ item.ca_certs | default(omit) }}"
@@ -26,7 +26,7 @@
 
     auth_mechanism: "{{ item.auth_mechanism | default(omit) }}"
     connection_options: "{{ item.connection_options | default(omit) }}"
-    create_for_localhost_exception: >-
-      {{ item.create_for_localhost_exception | default(omit) }}
-  no_log: true
+    create_for_localhost_exception: "{{ item.create_for_localhost_exception | default(omit) }}"
   loop: "{{ mongo_user }}"
+  when: 
+    - item.name != "admin"

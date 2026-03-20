@@ -1,19 +1,17 @@
 # mongod.conf
 
-# temporary file, for initial setup
-
-security:
-  authorization: disabled
+# temporary file, for initial setup - NO SECURITY
 
 systemLog:
 {{ mongo_systemlog | to_nice_yaml(indent=2) | indent(width=2, first=True) }}
 
 storage:
-{{ mongo_storage | to_nice_yaml(indent=2) | indent(width=2, first=True) }}
-#storage:
-#  dbPath: {{ mongo_storage.dbPath }}
-#  journal:
-#    enabled: true
+  dbPath: {{ mongo_storage.dbPath }}
+  engine: wiredTiger
+{% if mongo_storage.wiredTiger is defined %}
+  wiredTiger:
+{{ mongo_storage.wiredTiger | to_nice_yaml(indent=4) | indent(width=4, first=True) }}
+{% endif %}
 
 processManagement:
   fork: false
@@ -28,3 +26,5 @@ net:
 replication:
 {{ mongo_replication | to_nice_yaml(indent=2) | indent(width=2, first=True) }}
 {% endif %}
+
+# NO SECURITY SECTION - for user creation
